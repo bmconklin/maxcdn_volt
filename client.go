@@ -3,6 +3,7 @@ package maxcdn_volt
 import (
 	"log"
 	"time"
+	"errors"
 	"github.com/rbetts/voltdbgo/voltdb"
 )
 
@@ -224,6 +225,29 @@ func Connect(addr string) *Volt {
 	return &Volt{
 		volt,
 	}
+}
+
+// Query any table for one item, must pass in a struct to get populated. This 
+// should be a struct defined on your end based on the expected query
+// response.
+func (volt *Volt) QueryOne(query string, resp interface{}) error {
+	response, err := volt.Conn.Call("@AdHoc", query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if response.Table(0).HasNext() {
+		response.Table(0).Next(resp)
+	} else {
+		return errors.New("No items found matching that query.")
+	}
+	return nil
+}
+
+// Query any table for all items matching the query, must pass in a 
+// struct to get populated. This should be a struct defined on your 
+// end based on the expected query response.
+func (volt *Volt) QueryAll(query string) (*voltdb.Response, error) {
+	return  volt.Conn.Call("@AdHoc", query)
 }
 
 // Query the Companies table. Use a complete query string.
